@@ -1,0 +1,6 @@
+{
+    "require": {
+        "wamania/php-stemmer": "^3.0",
+        "patrickschur/language-detection": "^5.1"
+    }
+}
