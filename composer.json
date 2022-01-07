@@ -1,6 +1,13 @@
 {
     "require": {
         "wamania/php-stemmer": "^3.0",
-        "patrickschur/language-detection": "^5.1"
+        "patrickschur/language-detection": "^5.1",
+        "psr/log": "^1.1",
+        "symfony/polyfill-php80": "^1.23"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bundsgaard\\Phrasesearch\\": "src/"
+        }
     }
 }
