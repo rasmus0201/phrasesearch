@@ -78,7 +78,7 @@ class Searcher
             /** @var Document */
             $document = unserialize($line);
 
-            $this->documents[$document->getDocumentId()] = $document;
+            $this->documents[$document->getId()] = $document;
         }
         $this->log('... Done loading documents');
 

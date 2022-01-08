@@ -61,7 +61,7 @@ class Indexer
 
     /**
      * @param string $databasePath
-     * @param array<string, string> $methodToLanguageMap
+     * @param array<string, string[]> $methodToLanguageMap
      *
      * @throws RuntimeException
      */
@@ -82,9 +82,7 @@ class Indexer
             $sourceLanguage = $methodToLanguageMap[$methodId][0];
             $headword = $row[1];
             $lemmaId = $row[3];
-
             $externalId = $methodId . '$' . $lemmaId;
-            $documentId = md5($externalId . $headword);
 
             $headword = str_replace(
                 $this->collationKeys,
@@ -92,36 +90,25 @@ class Indexer
                 $headword
             );
 
-            $relativeFrequencies = [];
-            $words = explode(' ', $headword);
+            $document = new Document(
+                $this->stemmerManager,
+                $this->totalNumberOfDocuments,
+                $externalId,
+                $sourceLanguage,
+                $headword
+            );
 
-            foreach ($words as $word) {
-                $stemmedWord = $this->stemmerManager->stem($word, $sourceLanguage);
-
-                if (!isset($relativeFrequencies[$stemmedWord])) {
-                    $relativeFrequencies[$stemmedWord] = 1;
-                } else {
-                    $relativeFrequencies[$stemmedWord] += 1;
+            foreach ($document->getTermFrequencies() as $term => $freq) {
+                if (!isset($this->termCounts[$term])) {
+                    $this->termCounts[$term] = [];
                 }
 
-                if (!isset($this->termCounts[$stemmedWord])) {
-                    $this->termCounts[$stemmedWord] = [];
-                }
-
-                if (!isset($this->termCounts[$stemmedWord][$documentId])) {
-                    $this->termCounts[$stemmedWord][$documentId] = true;
+                if (!isset($this->termCounts[$term][$document->getId()])) {
+                    $this->termCounts[$term][$document->getId()] = true;
                 }
             }
 
-            $this->documents[$documentId] = new Document(
-                $documentId,
-                $externalId,
-                $row[1],
-                count($words),
-                0.0,
-                $relativeFrequencies
-            );
-
+            $this->documents[$document->getId()] = $document;
             $this->totalNumberOfDocuments++;
         }
 
@@ -149,7 +136,7 @@ class Indexer
             $score = $document->getScore();
 
             foreach ($document->getTermFrequencies() as $term => $frequency) {
-                $tf = round($frequency / $document->getWordCount(), 6);
+                $tf = round($frequency / $document->getTermCount(), 6);
                 $idf = round(
                     1 + log(($this->totalNumberOfDocuments + 1) / (array_sum($this->termCounts[$term]) + 1)),
                     6
@@ -158,7 +145,7 @@ class Indexer
                 $tfidf = round($tf * $idf, 6);
                 $score += $tfidf;
 
-                $indexData = $document->getDocumentId() . '$' . $tfidf;
+                $indexData = $document->getId() . '$' . $tfidf;
 
                 if (!isset($inverseIndex[$term])) {
                     $inverseIndex[$term] = [$indexData];
