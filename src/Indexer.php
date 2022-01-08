@@ -163,9 +163,6 @@ class Indexer
         fclose($indexHandle);
         fclose($documentsHandle);
 
-
-        // {"cat": ["docId1:tfidf"]}
-
         $this->log('Done with inverse index');
     }
 
