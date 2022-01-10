@@ -11,5 +11,8 @@
         "psr-4": {
             "Bundsgaard\\Phrasesearch\\": "src/"
         }
+    },
+    "require-dev": {
+        "hantaohuang/rocksdb-ide-helper": "^0.5.0"
     }
 }
