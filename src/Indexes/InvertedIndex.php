@@ -117,7 +117,7 @@ class InvertedIndex implements Countable
         $termFreq = $row['freq'];
         $postings = implode(
             '|',
-            $row['documents'] // $this->compressPostings($row['documents'])
+            $this->compressPostings($row['documents'])
         );
 
         return "\"{$key}\",{$termFreq},\"{$postings}\"";
