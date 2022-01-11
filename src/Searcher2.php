@@ -12,6 +12,8 @@ use RuntimeException;
 
 class Searcher2
 {
+    public const STOPWORDS_QUERY_LENGTH = 3;
+
     private Analyzer $analyzer;
     private LanguageDetector $languageDetector;
     private ?LoggerInterface $logger = null;
@@ -110,7 +112,7 @@ class Searcher2
         $count = 0;
         foreach ($queryTerms as $queryTerm) {
             if (
-                $numberQueryTerms > 2 &&
+                $numberQueryTerms >= self::STOPWORDS_QUERY_LENGTH &&
                 isset($this->stopwords[$language]) &&
                 in_array($queryTerm, $this->stopwords[$language])
             ) {

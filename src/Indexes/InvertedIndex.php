@@ -170,9 +170,9 @@ class InvertedIndex implements Countable
         $out = [$initialId];
 
         for ($i = 1; $i < count($postings) - 1; $i++) {
-            $newId = $postings[$i] + $initialId;
-            $out[] = $newId;
-            $initialId += $newId;
+            $idGap = $postings[$i];
+            $out[] = $initialId + $idGap;
+            $initialId += $idGap;
         }
 
         return $out;
