@@ -24,7 +24,8 @@ $analyzer->addNormalizer(new Collator(__DIR__ . '/../data/base.col'));
 $analyzer->addNormalizer(new Lowercaser());
 $analyzer->addNormalizer(new Stemmer(new StemmerManager()));
 
-$supportedLanguages = array_unique(array_merge(...array_values(require 'methods.php')));
+$methodIdsToLanguage = require __DIR__ . '/../data/methods.php';
+$supportedLanguages = array_unique(array_merge(...array_values($methodIdsToLanguage)));
 $ld = new LanguageDetector($supportedLanguages);
 
 $searcher = new Searcher2(
@@ -36,8 +37,6 @@ $searcher = new Searcher2(
 $searcher->setDebugMode();
 
 $searcher->load(__DIR__ . '/../data/index-da-2.dat');
-
-$methodIdsToLanguage = require 'methods.php';
 
 $results = $searcher->search(
     array_keys($methodIdsToLanguage),

@@ -23,7 +23,7 @@ $searcher->setDebugMode();
 
 $searcher->load(__DIR__ . '/../data/documents.dat', __DIR__ . '/../data/index.dat');
 
-$supportedLanguages = array_unique(array_merge(...array_values(require 'methods.php')));
+$supportedLanguages = array_unique(array_merge(...array_values(require __DIR__ . '/../data/methods.php')));
 $ld = new Language($supportedLanguages);
 
 $results = $searcher->search(

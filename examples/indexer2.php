@@ -34,7 +34,7 @@ $indexer = new Indexer2(
 
 $indexer->setDebugMode();
 
-$methodIdsToLanguage = require 'methods.php';
+$methodIdsToLanguage = require __DIR__ . '/../data/methods.php';
 $indexer->create(
     __DIR__ . '/../data/database-da-2.csv',
     __DIR__ . '/../data/index-da-3.dat',

@@ -18,7 +18,7 @@ $indexer = new Indexer(
 
 $indexer->setDebugMode();
 
-$methodIdsToLanguage = require 'methods.php';
+$methodIdsToLanguage = require __DIR__ . '/../data/methods.php';
 $indexer->loadDocuments(__DIR__ . '/../data/database-da.csv', $methodIdsToLanguage);
 $indexer->save(
     __DIR__ . '/../data/documents.dat',

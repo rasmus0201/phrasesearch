@@ -8,7 +8,7 @@ if (!$newHandle = fopen(__DIR__ . '/../data/database-da-2.csv', 'w+')) {
     throw new RuntimeException('Could not open file');
 }
 
-$methodToLanguageMap = require 'methods.php';
+$methodToLanguageMap = require __DIR__ . '/../data/methods.php';
 while ($row = fgetcsv($handle)) {
     $methodId = $row[0];
     if (!isset($methodToLanguageMap[$methodId])) {
