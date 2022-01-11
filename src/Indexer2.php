@@ -80,7 +80,7 @@ class Indexer2
 
         $this->totalNumberOfDocuments = $documentId - 1;
 
-        $this->invertedIndex->sort()->store();
+        $this->invertedIndex->store();
 
         fclose($handle);
 
