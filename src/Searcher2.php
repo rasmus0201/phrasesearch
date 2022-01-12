@@ -69,9 +69,9 @@ class Searcher2
         $this->log('... Done loading inverse index');
     }
 
-    public function search(array $methodIds, string $query)
+    public function search(array $languages, string $query)
     {
-        if (empty($methodIds)) {
+        if (empty($languages)) {
             throw new RuntimeException('Exepected non-empty method id');
         }
 
@@ -87,13 +87,26 @@ class Searcher2
         $memoryUsage->start();
 
         $guessedLanguages = $this->languageDetector->detect($query)->bestResults()->close();
+
+        $queryTerms = [];
+        $numberQueryTerms = 0;
+        foreach (array_keys($guessedLanguages) as $language) {
+            $isFirstLanguage = empty($queryTerms);
+            $queryTerms = array_merge($queryTerms, $this->analyzer->analyze($query, $language));
+
+            if ($isFirstLanguage) {
+                $numberQueryTerms = count($queryTerms);
+            }
+        }
+
+        $queryTerms = array_unique($queryTerms);
+
+        // Primary guessed language.
         $language = key($guessedLanguages);
 
-        $queryTerms = $this->analyzer->analyze($query, $language);
-        $numberQueryTerms = count($queryTerms);
-
-        // This is way more performant than array_intersect,
-        // interestingly enough... Cut time to only 4% (Test: 50ms -> 2ms)
+        // Interestingly enough, this is way more
+        // performant than array_intersect
+        // Cut time to only 4% (Test: 50ms -> 2ms)
         // @see https://stackoverflow.com/a/53203232
         $intersector = function (array $arrayOne, array $arrayTwo) {
             if (count($arrayOne) === 0 || count($arrayTwo) === 0) {
@@ -128,7 +141,7 @@ class Searcher2
                 );
             }
 
-            $count += 1;
+            $count = count($matchedPostings);
         }
 
         $matchedDocuments = $matchedPostings;

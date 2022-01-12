@@ -36,10 +36,11 @@ $searcher = new Searcher2(
 
 $searcher->setDebugMode();
 
-$searcher->load(__DIR__ . '/../data/index-da-2.dat');
+$searcher->load(__DIR__ . '/../data/index-da-2-2.dat');
 
+$methodIds = array_keys($methodIdsToLanguage);
 $results = $searcher->search(
-    array_keys($methodIdsToLanguage),
+    $supportedLanguages,
     $argv[1] ?? ''
 );
 
