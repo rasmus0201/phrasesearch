@@ -23,3 +23,8 @@
 - https://github.com/searchivarius/PyFastPFor
 - https://arxiv.org/pdf/1908.10598.pdf
 - https://arxiv.org/abs/1907.01032
+
+
+#### Index compression - roaring bitmaps
+- https://www.elastic.co/blog/frame-of-reference-and-roaring-bitmaps
+- https://medium.com/@amit.desai03/roaring-bitmaps-fast-data-structure-for-inverted-indexes-5490fa4d1b27
