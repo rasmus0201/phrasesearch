@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace Bundsgaard\Phrasesearch;
 
+use Bundsgaard\Phrasesearch\Entities\{Document, SearchResult};
 use Bundsgaard\Phrasesearch\Indexes\InvertedIndex;
+use Bundsgaard\Phrasesearch\Normalizers\Stemmer;
 use Bundsgaard\Phrasesearch\Support\{ExecutionTimer, MemoryUsage};
-use LanguageDetection\Language as LanguageDetector;
 use Psr\Log\{LoggerInterface, NullLogger};
 use RuntimeException;
+use SplFileObject;
 
 class Searcher
 {
     public const STOPWORDS_QUERY_LENGTH = 3;
 
     private Analyzer $analyzer;
-    private LanguageDetector $languageDetector;
     private ?LoggerInterface $logger = null;
     private InvertedIndex $invertedIndex;
+    private SplFileObject $database;
     private bool $debugging = false;
 
     /** @var array<string, string[]> */
@@ -25,11 +27,9 @@ class Searcher
 
     public function __construct(
         Analyzer $analyzer,
-        LanguageDetector $languageDetector,
         ?LoggerInterface $logger = null
     ) {
         $this->analyzer = $analyzer;
-        $this->languageDetector = $languageDetector;
         $this->setLogger($logger);
     }
 
@@ -52,10 +52,14 @@ class Searcher
         $this->stopwords = $stopwords;
     }
 
-    public function load(string $indexDataPath): void
+    public function load(string $indexDataPath, string $databasePath): void
     {
         if (!file_exists($indexDataPath)) {
             throw new RuntimeException('Could not find index data');
+        }
+
+        if (!file_exists($databasePath)) {
+            throw new RuntimeException('Could not find database');
         }
 
         $memoryUsage = new MemoryUsage();
@@ -64,12 +68,14 @@ class Searcher
         $this->log('... Loading inverse index');
         $this->invertedIndex = new InvertedIndex($indexDataPath);
 
+        $this->database = new SplFileObject($databasePath);
+
         $memoryUsage->end();
         $this->log($memoryUsage->__toString());
         $this->log('... Done loading inverse index');
     }
 
-    public function search(array $languages, string $query)
+    public function search(array $languages, string $query): SearchResult
     {
         if (empty($languages)) {
             throw new RuntimeException('Exepected non-empty method id');
@@ -86,23 +92,13 @@ class Searcher
         $memoryUsage = new MemoryUsage();
         $memoryUsage->start();
 
-        $guessedLanguages = $this->languageDetector->detect($query)->bestResults()->close();
-
         $queryTerms = [];
         $numberQueryTerms = 0;
-        foreach (array_keys($guessedLanguages) as $language) {
-            $isFirstLanguage = empty($queryTerms);
-            $queryTerms = array_merge($queryTerms, $this->analyzer->analyze($query, $language));
-
-            if ($isFirstLanguage) {
-                $numberQueryTerms = count($queryTerms);
-            }
+        foreach ($languages as $language) {
+            $queryTerms[$language] = $this->analyzer->analyze($query, $language);
         }
 
-        $queryTerms = array_unique($queryTerms);
-
-        // Primary guessed language.
-        $language = key($guessedLanguages);
+        $numberQueryTerms = count(current($queryTerms));
 
         // Interestingly enough, this is way more
         // performant than array_intersect
@@ -121,39 +117,57 @@ class Searcher
             return array_flip($x);
         };
 
-        $matchedPostings = [];
-        $count = 0;
-        foreach ($queryTerms as $queryTerm) {
-            if (
-                $numberQueryTerms >= self::STOPWORDS_QUERY_LENGTH &&
-                isset($this->stopwords[$language]) &&
-                in_array($queryTerm, $this->stopwords[$language])
-            ) {
-                continue;
-            }
+        $matchedDocuments = [];
+        foreach ($queryTerms as $language => $queryTerms) {
+            $isFirst = true;
 
-            if ($count === 0) {
-                $matchedPostings = $this->invertedIndex->get($queryTerm)['documents'] ?? [];
-            } else {
-                $matchedPostings = $intersector(
-                    $matchedPostings,
-                    $this->invertedIndex->get($queryTerm)['documents'] ?? []
-                );
-            }
+            foreach ($queryTerms as $queryTerm) {
+                if (
+                    $numberQueryTerms >= self::STOPWORDS_QUERY_LENGTH &&
+                    isset($this->stopwords[$language]) &&
+                    in_array($queryTerm, $this->stopwords[$language])
+                ) {
+                    continue;
+                }
 
-            $count = count($matchedPostings);
+                $postingsList = $this->invertedIndex->get($language, $queryTerm, [])['documents'] ?? [];
+                $matchedDocuments[$language] = $isFirst
+                    ? $postingsList
+                    : $intersector($matchedDocuments[$language], $postingsList);
+
+                $isFirst = false;
+            }
         }
 
-        $matchedDocuments = $matchedPostings;
+        /** @var Documents[] */
+        $documents = [];
+        foreach ($matchedDocuments as $language => $postingsList) {
+            foreach ($postingsList as $postingId) {
+                $this->database->seek($postingId - 1);
+
+                $documents[] = new Document(
+                    $this->analyzer,
+                    $this->invertedIndex,
+                    $postingId,
+                    $language,
+                    $this->database->current()
+                );
+            }
+        }
+
+        $rawTokens = $this->analyzer->analyze($query, 'en', [
+            'ignored_normalizers' => [Stemmer::class],
+            'use_stop_words_doc_length' => 0
+        ]);
+        $searchResult = new SearchResult($rawTokens, $documents, $this->invertedIndex->count());
 
         $memoryUsage->end();
         $executionTimer->end();
 
-        $this->log("Guessed search language: {$language}");
         $this->log($memoryUsage->__toString());
         $this->log($executionTimer->__toString());
 
-        return $matchedDocuments;
+        return $searchResult;
     }
 
     private function log(string $message)

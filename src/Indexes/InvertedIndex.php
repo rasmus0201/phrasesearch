@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Bundsgaard\Phrasesearch\Indexes;
 
 use Countable;
+use RuntimeException;
 
 class InvertedIndex implements Countable
 {
     /**
      * Should be used as a key-value dictionary.
      *
-     * @var array<string, array<string, int|int[]>>
+     * @var array<string, array<string, array<string, int|int[]>>>
      */
     private array $data = [];
 
@@ -19,70 +20,74 @@ class InvertedIndex implements Countable
     private $fh;
 
     private string $path;
+    private int $count = 0;
 
-    public function __construct(string $path)
+    public function __construct(string $path, array $languages = [])
     {
         $this->path = $path;
+
+        foreach ($languages as $language) {
+            $this->data[$language] = [];
+        }
+
         $this->loadIndex($path);
     }
 
-    /**
-     * @param array<string, int[]> $documents Keys be the terms and value is the postings list
-     */
-    public function addDocuments(array $documents): void
+    public function addDocument(string $language, string $key, int $docId, int $freq = 1): void
     {
-        // TODO: Optimize the documents list with a skip-pointer list or other method for faster search
-        // @see https://nlp.stanford.edu/IR-book/html/htmledition/faster-postings-list-intersection-via-skip-pointers-1.html
-        foreach ($documents as $key => $postings) {
-            $freq = count($postings);
-
-            if (!$this->has($key)) {
-                $this->data[$key] = [
-                    'freq' => $freq,
-                    'documents' => $postings,
-                ];
-
-                continue;
+        if (!$this->has($language, $key)) {
+            if (!isset($this->data[$language])) {
+                $this->data[$language] = [];
             }
 
-            $this->data[$key]['freq'] += $freq;
-            $this->data[$key]['documents'] = array_merge($this->data[$key]['documents'], $postings);
-        }
-    }
-
-    public function addDocument(string $key, int $docId, int $freq = 1): void
-    {
-        if (!$this->has($key)) {
-            $this->data[$key] = [
+            $this->data[$language][$key] = [
                 'freq' => $freq,
                 'documents' => [$docId],
             ];
 
+            $this->count += 1;
+
             return;
         }
 
-        $this->data[$key]['freq'] += $freq;
-        $this->data[$key]['documents'][] = $docId;
+        $this->count += 1;
+        $this->data[$language][$key]['freq'] += $freq;
+        $this->data[$language][$key]['documents'][] = $docId;
     }
 
-    public function has(string $key): bool
+    public function has(string $language, string $key): bool
     {
-        return isset($this->data[$key]);
+        return isset($this->data[$language][$key]);
     }
 
-    public function get(string $key, $default = null): ?array
+    public function get(string $language, string $key, $default = null): ?array
     {
-        return $this->data[$key] ?? $default;
+        return $this->data[$language][$key] ?? $default;
     }
 
-    public function delete(string $key): void
+    public function df(string $key): int
     {
-        unset($this->data[$key]);
+        $freq = 0;
+
+        foreach ($this->data as $index) {
+            if (!isset($index[$key])) {
+                continue;
+            }
+
+            $freq += $index[$key]['freq'];
+        }
+
+        return $freq;
+    }
+
+    public function delete(string $language, string $key): void
+    {
+        unset($this->data[$language][$key]);
     }
 
     public function count(): int
     {
-        return count($this->data);
+        return $this->count;
     }
 
     public function store()
@@ -94,25 +99,29 @@ class InvertedIndex implements Countable
 
         $batch = 0;
         $content = '';
-        foreach ($this->data as $key => $row) {
-            if ($batch === 50_000) {
-                fwrite($tmpFh, $content);
-                $content = '';
-                $batch = 0;
-            }
+        foreach ($this->data as $language => $index) {
+            foreach ($index as $key => $row) {
+                if ($batch === 50_000) {
+                    fwrite($tmpFh, $content);
+                    $content = '';
+                    $batch = 0;
+                }
 
-            sort($row['documents'], SORT_NUMERIC);
-            $content .= $this->formatRow($key, $row) . "\n";
-            $batch += 1;
+                sort($row['documents'], SORT_NUMERIC);
+                $content .= $this->formatRow($language, (string) $key, $row) . "\n";
+                $batch += 1;
+            }
         }
 
         // Write final content without final newline
         fwrite($tmpFh, trim($content));
         rename($path, $this->path);
         fclose($tmpFh);
+
+        $this->writeMetadata();
     }
 
-    private function formatRow($key, array $row): string
+    private function formatRow(string $language, string $key, array $row): string
     {
         $termFreq = $row['freq'];
         $postings = implode(
@@ -120,7 +129,17 @@ class InvertedIndex implements Countable
             $this->compressPostings($row['documents'])
         );
 
-        return "\"{$key}\",{$termFreq},\"{$postings}\"";
+        return "\"{$language}|{$key}\",{$termFreq},\"{$postings}\"";
+    }
+
+    private function writeMetadata()
+    {
+        if (!$handle = fopen($this->path . '.metadata', 'w')) {
+            throw new RuntimeException('Could open file for metadata');
+        }
+
+        fwrite($handle, "\"total_docs\",{$this->totalNumberOfDocuments}\n");
+        fclose($handle);
     }
 
     private function loadIndex(string $path): void
@@ -135,19 +154,48 @@ class InvertedIndex implements Countable
         fseek($this->fh, 0);
 
         while ($row = fgetcsv($this->fh)) {
-            $this->loadPostings($row[0], array_map(
+            list($language, $key) = explode('|', $row[0]);
+
+            $this->loadPostings($language, $key, array_map(
                 fn ($id) => intval($id),
                 explode('|', $row[2])
             ));
         }
+
+        $this->loadMetadata($path . '.metadata');
     }
 
-    private function loadPostings(string $key, array $docIds): void
+    private function loadPostings(string $language, string $key, array $docIds): void
     {
-        $this->data[$key] = [
+        if (!isset($this->data[$language])) {
+            $this->data[$language] = [];
+        }
+
+        $this->data[$language][$key] = [
             'freq' => count($docIds),
             'documents' => $this->decompressPostings($docIds),
         ];
+    }
+
+    private function loadMetadata(string $path)
+    {
+        if (!file_exists($path)) {
+            return;
+        }
+
+        $handle = fopen($path, 'r');
+        while ($row = fgetcsv($handle)) {
+            switch ($row[0]) {
+                case 'total_docs':
+                    $this->count = (int) $row[1];
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        fclose($handle);
     }
 
     private function compressPostings(array $postings)

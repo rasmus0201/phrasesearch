@@ -46,8 +46,11 @@ class LatinTokenizer implements TokenizerInterface
                     $token = '';
                     break;
 
-                case self::TOK_PLUS:
                 case self::TOK_SLASH:
+                    $token .= ' ';
+                    break;
+
+                case self::TOK_PLUS:
                 case self::TOK_EN_DASH:
                 case self::TOK_EM_DASH:
                     break;

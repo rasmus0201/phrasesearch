@@ -63,7 +63,8 @@ class Indexer
         $lineCount = $this->getLineCount($databasePath);
         $progressBar = new ProgressBar($this->output, $lineCount);
 
-        $this->invertedIndex = new InvertedIndex($indexDataPath);
+        $supportedLanguages = array_unique(array_merge(...array_values($methodToLanguagesMap)));
+        $this->invertedIndex = new InvertedIndex($indexDataPath, $supportedLanguages);
 
         $progressBar->start();
         $documentId = 1;
@@ -71,7 +72,7 @@ class Indexer
             $language = $methodToLanguagesMap[$row[0]][0] ?? 'en';
 
             foreach ($this->analyzer->analyze($row[1], $language) as $term) {
-                $this->invertedIndex->addDocument($term, $documentId);
+                $this->invertedIndex->addDocument($language, $term, $documentId);
             }
 
             $documentId += 1;

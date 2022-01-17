@@ -7,12 +7,10 @@ use Bundsgaard\Phrasesearch\{
     Indexer,
     Normalizers\Collator,
     Normalizers\Lowercaser,
-    Normalizers\Stemmer,
     Support\EchoLogger,
     Tokenizers\LatinTokenizer
 };
 use Symfony\Component\Console\Output\ConsoleOutput;
-use Wamania\Snowball\StemmerManager;
 
 ini_set('memory_limit', '2048M');
 
@@ -24,7 +22,7 @@ $analyzer->addStopwords(require 'stopwords.php');
 
 $analyzer->addNormalizer(new Collator(__DIR__ . '/../data/base.col'));
 $analyzer->addNormalizer(new Lowercaser());
-$analyzer->addNormalizer(new Stemmer(new StemmerManager()));
+// $analyzer->addNormalizer(new Stemmer(new StemmerManager()));
 
 $indexer = new Indexer(
     $analyzer,

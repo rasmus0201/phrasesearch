@@ -9,7 +9,6 @@ use Bundsgaard\Phrasesearch\Contracts\{NormalizerInterface, TokenizerInterface};
 class Analyzer
 {
     private TokenizerInterface $tokenizer;
-    private int $useStopwordsWhenDocLength;
 
     /** @var NormalizerInterface[] */
     private array $normalizers = [];
@@ -18,10 +17,8 @@ class Analyzer
     private array $stopwords = [];
 
     public function __construct(
-        TokenizerInterface $tokenizer,
-        int $useStopwordsWhenDocLength = 3
+        TokenizerInterface $tokenizer
     ) {
-        $this->useStopwordsWhenDocLength = $useStopwordsWhenDocLength;
         $this->tokenizer = $tokenizer;
     }
 
@@ -41,8 +38,13 @@ class Analyzer
     /**
      * @return string[]
      */
-    public function analyze(string $string, string $language): array
+    public function analyze(string $string, string $language, array $config = []): array
     {
+        $config = array_merge([
+            'ignored_normalizers' => [],
+            'use_stop_words_doc_length' => 3
+        ], $config);
+
         $tokens = $this->tokenizer->tokenize($string);
         $tokenCount = count($tokens);
 
@@ -50,8 +52,8 @@ class Analyzer
 
         foreach ($tokens as $token) {
             if (
-                $this->useStopwordsWhenDocLength > 0 &&
-                $this->useStopwordsWhenDocLength >= $tokenCount &&
+                $config['use_stop_words_doc_length'] > 0 &&
+                $config['use_stop_words_doc_length'] >= $tokenCount &&
                 isset($this->stopwords[$language]) &&
                 in_array($token, $this->stopwords[$language])
             ) {
@@ -60,6 +62,10 @@ class Analyzer
 
             $term = $token;
             foreach ($this->normalizers as $normalizer) {
+                if (in_array(get_class($normalizer), $config['ignored_normalizers'])) {
+                    continue;
+                }
+
                 $term = $normalizer->normalize($term, $language);
             }
 

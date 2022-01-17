@@ -8,5 +8,5 @@ use Bundsgaard\Phrasesearch\Entities\Document;
 
 interface ScorerInterface
 {
-    public function score(Document $document): float;
+    public function score(array $terms, Document $document): float;
 }
