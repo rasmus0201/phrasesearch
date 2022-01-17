@@ -2,42 +2,50 @@
 
 declare(strict_types=1);
 
+use Bundsgaard\Phrasesearch\{
+    Analyzer,
+    Normalizers\Collator,
+    Normalizers\Lowercaser,
+    Normalizers\Stemmer,
+    Searcher2,
+    Support\EchoLogger,
+    Tokenizers\LatinTokenizer
+};
+use LanguageDetection\Language as LanguageDetector;
+use Wamania\Snowball\StemmerManager;
+
 ini_set('memory_limit', '2048M');
 
 require '../vendor/autoload.php';
 
-use Bundsgaard\Phrasesearch\Collator;
-use Bundsgaard\Phrasesearch\Entities\Document;
-use Bundsgaard\Phrasesearch\Searcher;
-use Bundsgaard\Phrasesearch\Support\EchoLogger;
-use LanguageDetection\Language;
-use Wamania\Snowball\StemmerManager;
+$analyzer = new Analyzer(new LatinTokenizer());
 
-$searcher = new Searcher(
-    new Collator(__DIR__ . '/../data/base.col'),
-    new StemmerManager(),
+$analyzer->addNormalizer(new Collator(__DIR__ . '/../data/base.col'));
+$analyzer->addNormalizer(new Lowercaser());
+$analyzer->addNormalizer(new Stemmer(new StemmerManager()));
+
+$methodIdsToLanguage = require __DIR__ . '/../data/methods.php';
+$supportedLanguages = array_unique(array_merge(...array_values($methodIdsToLanguage)));
+$ld = new LanguageDetector($supportedLanguages);
+
+$searcher = new Searcher2(
+    $analyzer,
+    $ld,
     new EchoLogger()
 );
 
 $searcher->setDebugMode();
 
-$searcher->load(__DIR__ . '/../data/documents.dat', __DIR__ . '/../data/index.dat');
+$searcher->load(__DIR__ . '/../data/index-da-2.dat');
 
-$supportedLanguages = array_unique(array_merge(...array_values(require __DIR__ . '/../data/methods.php')));
-$ld = new Language($supportedLanguages);
-
+$methodIds = array_keys($methodIdsToLanguage);
 $results = $searcher->search(
-    $ld,
-    explode(',', $argv[2] ?? []),
+    $supportedLanguages,
     $argv[1] ?? ''
 );
 
-$resultHeadwords = array_map(
-    function ($methodId) {
-        return array_map(fn (Document $d) => $d->getExternalId() . ' = ' .   $d->getHeadword(), $methodId);
-    },
-    $results
-);
-
-print_r($resultHeadwords);
-echo PHP_EOL;
+$count = count($results);
+var_dump($count);
+if ($count < 25) {
+    var_dump($results);
+}
