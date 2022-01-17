@@ -23,12 +23,16 @@ class TfIdf implements ScorerInterface
         $dfs = $document->getFrequencies();
         $tf = $document->getRelativeTermFrequencies();
         foreach ($document->getTokens() as $term) {
+            if (!in_array($term, $terms)) {
+                continue;
+            }
+
             $scores[$term] = $tf[$term] * log($this->totalNumberOfDocuments / $dfs[$term]);
         }
 
         $score = 0.0;
         foreach ($terms as $term) {
-            $score += $scores[$term];
+            $score += $scores[$term] ?? 0;
         }
 
         $score -= levenshtein(implode(' ', $terms), $document->getContent(), 10, 8, 10);
