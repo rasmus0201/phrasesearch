@@ -3,6 +3,7 @@
 import lmdb
 import socket
 import os
+from os import path
 from io import StringIO
 from _thread import *
 import base64
@@ -29,7 +30,8 @@ def threaded_client(connection):
             break
 
         map_size=(1024 * 1024 * 1024) * 4 # 1GB * x
-        env = lmdb.open('/../data/index', map_size=map_size)
+        data_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'data/index'))
+        env = lmdb.open(data_dir, map_size=map_size)
 
         print(env.stat())
 
