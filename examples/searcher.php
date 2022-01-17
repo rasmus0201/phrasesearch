@@ -7,7 +7,7 @@ use Bundsgaard\Phrasesearch\{
     Normalizers\Collator,
     Normalizers\Lowercaser,
     Normalizers\Stemmer,
-    Searcher2,
+    Searcher,
     Support\EchoLogger,
     Tokenizers\LatinTokenizer
 };
@@ -28,7 +28,7 @@ $methodIdsToLanguage = require __DIR__ . '/../data/methods.php';
 $supportedLanguages = array_unique(array_merge(...array_values($methodIdsToLanguage)));
 $ld = new LanguageDetector($supportedLanguages);
 
-$searcher = new Searcher2(
+$searcher = new Searcher(
     $analyzer,
     $ld,
     new EchoLogger()

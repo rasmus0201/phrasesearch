@@ -10,7 +10,7 @@ use LanguageDetection\Language as LanguageDetector;
 use Psr\Log\{LoggerInterface, NullLogger};
 use RuntimeException;
 
-class Searcher2
+class Searcher
 {
     public const STOPWORDS_QUERY_LENGTH = 3;
 

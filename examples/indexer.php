@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Bundsgaard\Phrasesearch\{
     Analyzer,
-    Indexer2,
+    Indexer,
     Normalizers\Collator,
     Normalizers\Lowercaser,
     Normalizers\Stemmer,
@@ -26,7 +26,7 @@ $analyzer->addNormalizer(new Collator(__DIR__ . '/../data/base.col'));
 $analyzer->addNormalizer(new Lowercaser());
 $analyzer->addNormalizer(new Stemmer(new StemmerManager()));
 
-$indexer = new Indexer2(
+$indexer = new Indexer(
     $analyzer,
     new ConsoleOutput(ConsoleOutput::VERBOSITY_DEBUG),
     new EchoLogger()

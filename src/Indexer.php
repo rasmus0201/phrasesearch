@@ -12,7 +12,7 @@ use SplFileObject;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Indexer2
+class Indexer
 {
     private Analyzer $analyzer;
     private OutputInterface $output;
