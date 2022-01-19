@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4d94922727380cfb7554d0c42ba07b68",
+    "content-hash": "66ca64a5cd53a30548b05066582ade98",
     "packages": [
         {
             "name": "fukuball/jieba-php",
@@ -208,6 +208,43 @@
                 "source": "https://github.com/php-fig/log/tree/1.1.4"
             },
             "time": "2021-05-03T11:20:27+00:00"
+        },
+        {
+            "name": "rasmus0201/php-lmdb",
+            "version": "0.1.1",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:rasmus0201/php-lmdb.git",
+                "reference": "09a907fc3e5fe8eef05273709f8d754e9d14181c"
+            },
+            "require": {
+                "php": "^7.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Bundsgaard\\Lmdb\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Rasmus Sørensen",
+                    "homepage": "https://rasmusbundsgaard.dk/",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Lightweight lmdb wrapper for OOP",
+            "keywords": [
+                "database",
+                "lmdb",
+                "lmdb wrapper",
+                "memory-mapped database",
+                "php"
+            ],
+            "time": "2022-01-19T14:27:33+00:00"
         },
         {
             "name": "symfony/console",
@@ -1418,37 +1455,7 @@
             "time": "2021-08-17T18:16:34+00:00"
         }
     ],
-    "packages-dev": [
-        {
-            "name": "hantaohuang/rocksdb-ide-helper",
-            "version": "v0.5.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/huanghantao/rocksdb-ide-helper.git",
-                "reference": "e091b7d35940d376142b014556267b896391c557"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/huanghantao/rocksdb-ide-helper/zipball/e091b7d35940d376142b014556267b896391c557",
-                "reference": "e091b7d35940d376142b014556267b896391c557",
-                "shasum": ""
-            },
-            "type": "library",
-            "notification-url": "https://packagist.org/downloads/",
-            "authors": [
-                {
-                    "name": "codinghuang",
-                    "email": "2812240764@qq.com"
-                }
-            ],
-            "description": "rocksdb ide helper",
-            "support": {
-                "issues": "https://github.com/huanghantao/rocksdb-ide-helper/issues",
-                "source": "https://github.com/huanghantao/rocksdb-ide-helper/tree/master"
-            },
-            "time": "2020-05-09T09:04:34+00:00"
-        }
-    ],
+    "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],
