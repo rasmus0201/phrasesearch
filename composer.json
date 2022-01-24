@@ -12,11 +12,19 @@
         "symfony/polyfill-php80": "^1.23",
         "fukuball/jieba-php": "^0.33.0",
         "symfony/console": "^5.4",
-        "rasmus0201/php-lmdb": "^0.1.1"
+        "rasmus0201/php-lmdb": "^0.1.1",
+        "league/route": "^5.1",
+        "nyholm/psr7": "^1.4",
+        "nyholm/psr7-server": "^1.0"
     },
     "autoload": {
         "psr-4": {
             "Bundsgaard\\Phrasesearch\\": "src/"
         }
+    },
+    "require-dev": {
+        "swoft/swoole-ide-helper": "^4.4",
+        "symfony/http-client": "^5.4",
+        "squizlabs/php_codesniffer": "^3.6"
     }
 }
